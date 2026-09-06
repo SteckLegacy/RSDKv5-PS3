@@ -17,6 +17,21 @@ int32 RSDK::APIFunctionTableCount;
 
 RSDK::GameVersionInfo RSDK::gameVerInfo;
 
+#if RETRO_PLATFORM == RETRO_WIN
+const char *Link::extention = ".dll";
+const char *Link::prefix    = NULL;
+#elif RETRO_PLATFORM == RETRO_SWITCH
+const char *Link::extention = ".elf";
+const char *Link::prefix    = NULL;
+#else
+const char *Link::prefix    = "lib";
+#if RETRO_PLATFORM == RETRO_OSX
+const char *Link::extention = ".dylib";
+#else
+const char *Link::extention = ".so";
+#endif
+#endif
+
 void NullFunc() {}
 
 #define ADD_RSDK_FUNCTION(id, func) RSDKFunctionTable[id] = (void *)func;

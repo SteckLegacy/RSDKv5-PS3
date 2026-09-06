@@ -412,21 +412,20 @@ class Link
 public:
 #if RETRO_PLATFORM == RETRO_WIN
     typedef HMODULE Handle;
-    // constexpr was added in C++11 this is safe don't kill me
-    static constexpr const char *extention = ".dll";
-    static constexpr const char *prefix    = NULL;
+    static const char *extention;
+    static const char *prefix;
 #elif RETRO_PLATFORM == RETRO_SWITCH
     typedef DynModule *Handle;
-    static constexpr const char *extention = ".elf";
-    static constexpr const char *prefix    = NULL;
+    static const char *extention;
+    static const char *prefix;
 
     static Handle dlopen(const char *, int);
     static void *dlsym(Handle, const char *);
     static int dlclose(Handle);
     static char *dlerror();
 
-    static constexpr const int RTLD_LOCAL = 0;
-    static constexpr const int RTLD_LAZY  = 0;
+    static const int RTLD_LOCAL = 0;
+    static const int RTLD_LAZY  = 0;
 
 private:
     static Result err;
@@ -434,12 +433,8 @@ private:
 public:
 #else
     typedef void *Handle;
-    static constexpr const char *prefix    = "lib";
-#if RETRO_PLATFORM == RETRO_OSX
-    static constexpr const char *extention = ".dylib";
-#else
-    static constexpr const char *extention = ".so";
-#endif
+    static const char *prefix;
+    static const char *extention;
 #endif
 
     static inline Handle PlatformLoadLibrary(std::string path)

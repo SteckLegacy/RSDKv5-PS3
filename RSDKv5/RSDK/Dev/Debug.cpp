@@ -98,12 +98,12 @@ void RSDK::PrintLog(int32 mode, const char *message, ...)
             jbyteArray array = jni->env->NewByteArray(len); // as per research, this gets freed automatically
             jni->env->SetByteArrayRegion(array, 0, len, (jbyte *)outputString);
             jni->env->CallVoidMethod(jni->thiz, writeLog, array, as);
-#elif RETRO_PLATFORM == RETRO_SWITCH
+#elif RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_PS3
             printf("%s", outputString);
 #endif
         }
 
-#if !RETRO_USE_ORIGINAL_CODE && RETRO_PLATFORM != RETRO_ANDROID
+#if !RETRO_USE_ORIGINAL_CODE && RETRO_PLATFORM != RETRO_ANDROID && RETRO_PLATFORM != RETRO_PS3
         char logPath[0x100];
         sprintf_s(logPath, sizeof(logPath), "%slog.txt", SKU::userFileDir);
         FileIO *file = fOpen(logPath, "a");

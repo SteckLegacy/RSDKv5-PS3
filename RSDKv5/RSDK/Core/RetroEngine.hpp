@@ -91,6 +91,7 @@ enum GameRegions {
 #define RETRO_iOS     (6)
 #define RETRO_ANDROID (7)
 #define RETRO_UWP     (8)
+#define RETRO_PS3     (9)
 
 // ============================
 // PLATFORMS (used mostly in legacy but could come in handy here)
@@ -141,6 +142,9 @@ enum GameRegions {
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
 #elif defined __linux__
 #define RETRO_PLATFORM   (RETRO_LINUX)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
+#elif defined __CELLOS_LV2__
+#define RETRO_PLATFORM   (RETRO_PS3)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
 #else
 #define RETRO_PLATFORM   (RETRO_WIN)
@@ -406,6 +410,17 @@ enum GameRegions {
 #error RSDK_USE_OGL must be defined.
 #endif
 
+#elif RETRO_PLATFORM == RETRO_PS3
+
+#undef RETRO_RENDERDEVICE_EGL
+#define RETRO_RENDERDEVICE_EGL (1)
+#undef RETRO_INPUTDEVICE_PDBOAT
+#define RETRO_INPUTDEVICE_PDBOAT (1)
+#undef RETRO_INPUTDEVICE_KEYBOARD
+#define RETRO_INPUTDEVICE_KEYBOARD (1)
+#undef RETRO_AUDIODEVICE_MINI
+#define RETRO_AUDIODEVICE_MINI (1)
+
 #elif RETRO_PLATFORM == RETRO_OSX || RETRO_PLATFORM == RETRO_iOS
 
 #undef RETRO_RENDERDEVICE_SDL2
@@ -476,7 +491,7 @@ enum GameRegions {
 #elif RETRO_PLATFORM == RETRO_iOS
 
 #include "cocoaHelpers.hpp"
-#elif RETRO_PLATFORM == RETRO_LINUX || RETRO_PLATFORM == RETRO_SWITCH
+#elif RETRO_PLATFORM == RETRO_LINUX || RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_PS3
 
 #if RETRO_AUDIODEVICE_PORT
 #include <portaudio.h>

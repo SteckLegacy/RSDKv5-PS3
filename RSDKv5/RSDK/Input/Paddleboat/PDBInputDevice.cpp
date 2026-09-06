@@ -156,7 +156,9 @@ void RSDK::SKU::InputDevicePaddleboat::CloseDevice()
     this->active       = false;
     this->isAssigned   = false;
     this->controllerID = PADDLEBOAT_MAX_CONTROLLERS;
+#if RETRO_PLATFORM == RETRO_ANDROID
     GameActivityPointerAxes_disableAxis(controllerID);
+#endif
 }
 
 RSDK::SKU::InputDevicePaddleboat *RSDK::SKU::InitPaddleboatInputDevice(uint32 id, uint8 controllerID)
@@ -175,7 +177,9 @@ RSDK::SKU::InputDevicePaddleboat *RSDK::SKU::InitPaddleboatInputDevice(uint32 id
     InputDevicePaddleboat *device = (InputDevicePaddleboat *)inputDeviceList[inputDeviceCount];
 
     device->controllerID = controllerID;
+#if RETRO_PLATFORM == RETRO_ANDROID
     GameActivityPointerAxes_enableAxis(controllerID);
+#endif
 
     uint8 controllerType = DEVICE_XBOX;
 
@@ -235,7 +239,11 @@ void RSDK::SKU::PaddleboatStatusCallback(const int32 jid, const Paddleboat_Contr
 void RSDK::SKU::ProcessPaddleboatInputDevices()
 {
     // connect/disconnect controllers
+#if RETRO_PLATFORM == RETRO_ANDROID
     Paddleboat_update(GetJNISetup()->env);
+#else
+    Paddleboat_update(NULL);
+#endif
 }
 
 void RSDK::SKU::InitPaddleboatInputAPI()

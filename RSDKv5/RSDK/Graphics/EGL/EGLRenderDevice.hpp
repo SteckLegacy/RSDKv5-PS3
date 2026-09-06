@@ -1,3 +1,8 @@
+#if RETRO_PLATFORM == RETRO_PS3
+#include <PSGL/psgl.h>
+#include <PSGL/psglu.h>
+#endif
+
 class RenderDevice : public RenderDeviceBase
 {
 public:
@@ -58,6 +63,9 @@ public:
     static NWindow *window;
 #elif RETRO_PLATFORM == RETRO_ANDROID
     static ANativeWindow *window;
+#elif RETRO_PLATFORM == RETRO_PS3
+    static PSGLdevice *psglDevice;
+    static PSGLcontext *psglContext;
 #endif
 
     static GLuint screenTextures[SCREEN_COUNT];
@@ -78,6 +86,10 @@ private:
 
     static GLuint VAO;
     static GLuint VBO;
+
+#if RETRO_PLATFORM == RETRO_PS3
+    static RenderVertex vertexBuffer[60];
+#endif
 
     static uint32 *videoBuffer;
 };

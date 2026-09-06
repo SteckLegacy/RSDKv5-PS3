@@ -84,6 +84,10 @@ EGLConfig RenderDevice::config;
 NWindow *RenderDevice::window;
 #elif RETRO_PLATFORM == RETRO_ANDROID
 ANativeWindow *RenderDevice::window;
+#elif RETRO_PLATFORM == RETRO_PS3
+PSGLdevice *RenderDevice::psglDevice;
+PSGLcontext *RenderDevice::psglContext;
+RenderVertex RenderDevice::vertexBuffer[60];
 #endif
 
 GLuint RenderDevice::VAO;
@@ -109,13 +113,50 @@ bool32 RenderDevice::isInitialized = false;
 
 bool RenderDevice::Init()
 {
+#if RETRO_PLATFORM == RETRO_PS3
+    psglInit(NULL);
+    PSGLdeviceParameters params;
+    params.enable = PSGL_DEVICE_PARAMETER_TEX_CACHE_SIZE;
+    params.maxBpp = 32;
+    params.maxWidth = 1280;
+    params.maxHeight = 720;
+    params.bufferingMode = PSGL_BUFFERING_MODE_DOUBLE;
+    params.texCacheSize = 32 * 1024 * 1024;
+    psglDevice = psglCreateDeviceExtended(&params);
+    psglContext = psglCreateContext(psglDevice, NULL);
+    psglMakeCurrent(psglContext, psglDevice);
+    psglResetCurrentContext();
+
+    GetDisplays();
+
+    if (!InitGraphicsAPI() || !InitShaders())
+        return false;
+
+    int32 size = videoSettings.pixWidth >= SCREEN_YSIZE ? videoSettings.pixWidth : SCREEN_YSIZE;
+    if (scanlines)
+        free(scanlines);
+    scanlines = (ScanlineInfo *)malloc(size * sizeof(ScanlineInfo));
+    memset(scanlines, 0, size * sizeof(ScanlineInfo));
+
+    videoSettings.windowState = WINDOWSTATE_ACTIVE;
+    videoSettings.dimMax      = 1.0;
+    videoSettings.dimPercent  = 1.0;
+
+    if (!isRunning) {
+        if (!AudioDevice::Init())
+            return false;
+        InitInputDevices();
+    }
+    isInitialized = true;
+    return true;
+#else
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (!display) {
         PrintLog(PRINT_NORMAL, "[EGL] Could not connect to display: %d", eglGetError());
         return false;
     }
 
-    eglInitialize(display, nullptr, nullptr);
+    eglInitialize(display, NULL, NULL);
 
 #if RETRO_PLATFORM == RETRO_SWITCH
     if (eglBindAPI(EGL_OPENGL_API) == EGL_FALSE) {
@@ -155,6 +196,7 @@ bool RenderDevice::Init()
     }
     isInitialized = true;
     return true;
+#endif
 }
 
 bool RenderDevice::SetupRendering()
@@ -183,7 +225,7 @@ bool RenderDevice::SetupRendering()
     SwappyGL_setMaxAutoSwapIntervalNS(SWAPPY_SWAP_60FPS);
 #endif
 
-    surface = eglCreateWindowSurface(display, config, window, nullptr);
+    surface = eglCreateWindowSurface(display, config, window, NULL);
     if (!surface) {
         PrintLog(PRINT_NORMAL, "[EGL] Surface creation failed: %d", eglGetError());
         return false;
@@ -278,6 +320,8 @@ bool RenderDevice::InitGraphicsAPI()
         PrintLog(PRINT_NORMAL, "[EGL] gladLoadGL failure");
         return false;
     }
+#elif RETRO_PLATFORM == RETRO_PS3
+    // PSGL fixed-function initializations
 #else
     GLint range[2], precision;
 
@@ -307,6 +351,17 @@ bool RenderDevice::InitGraphicsAPI()
     glBindVertexArray(VAO);
 #endif
 
+#if RETRO_PLATFORM == RETRO_PS3
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    glEnable(GL_TEXTURE_2D);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+#else
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(RenderVertex) * (!RETRO_REV02 ? 24 : 60), NULL, GL_DYNAMIC_DRAW);
@@ -317,10 +372,14 @@ bool RenderDevice::InitGraphicsAPI()
     // glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(RenderVertex), (void *)offsetof(RenderVertex, tex));
     glEnableVertexAttribArray(1);
+#endif
 
 #if RETRO_PLATFORM == RETRO_SWITCH
     videoSettings.fsWidth  = 1920;
     videoSettings.fsHeight = 1080;
+#elif RETRO_PLATFORM == RETRO_PS3
+    videoSettings.fsWidth  = 1280;
+    videoSettings.fsHeight = 720;
 #elif RETRO_PLATFORM == RETRO_ANDROID
     customSettings.maxPixWidth = 0;
     videoSettings.fsWidth      = 0;
@@ -595,6 +654,28 @@ const RenderVertex rsdkGLVertexBuffer[24] =
 
 void RenderDevice::InitVertexBuffer()
 {
+#if RETRO_PLATFORM == RETRO_PS3
+    memcpy(vertexBuffer, rsdkGLVertexBuffer, sizeof(rsdkGLVertexBuffer));
+
+    float x = 0.5 / (float)viewSize.x;
+    float y = 0.5 / (float)viewSize.y;
+
+    int32 vertCount = (RETRO_REV02 ? 60 : 24) - 6;
+    for (int32 v = 0; v < vertCount; ++v) {
+        RenderVertex *vertex = &vertexBuffer[v];
+        vertex->pos.x        = vertex->pos.x + x;
+        vertex->pos.y        = vertex->pos.y - y;
+
+        if (vertex->tex.x)
+            vertex->tex.x = screens[0].size.x * (1.0 / textureSize.x);
+
+        if (vertex->tex.y)
+            vertex->tex.y = screens[0].size.y * (1.0 / textureSize.y);
+    }
+
+    glVertexPointer(3, GL_FLOAT, sizeof(RenderVertex), &vertexBuffer[0].pos);
+    glTexCoordPointer(2, GL_FLOAT, sizeof(RenderVertex), &vertexBuffer[0].tex);
+#else
     RenderVertex vertBuffer[sizeof(rsdkGLVertexBuffer) / sizeof(RenderVertex)];
     memcpy(vertBuffer, rsdkGLVertexBuffer, sizeof(rsdkGLVertexBuffer));
 
@@ -616,6 +697,7 @@ void RenderDevice::InitVertexBuffer()
     }
 
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(RenderVertex) * (!RETRO_REV02 ? 24 : 60), vertBuffer);
+#endif
 }
 
 void RenderDevice::InitFPSCap() {
@@ -775,7 +857,9 @@ void RenderDevice::FlipScreen()
 #endif
     }
 
-#if RETRO_PLATFORM != RETRO_ANDROID
+#if RETRO_PLATFORM == RETRO_PS3
+    psglSwap();
+#elif RETRO_PLATFORM != RETRO_ANDROID
     if (!eglSwapBuffers(display, surface)) {
         PrintLog(PRINT_NORMAL, "[EGL] Failed to swap buffers: %d", eglGetError());
     }
@@ -837,6 +921,11 @@ void RenderDevice::Release(bool32 isRefresh)
 
 bool RenderDevice::InitShaders()
 {
+#if RETRO_PLATFORM == RETRO_PS3
+    videoSettings.shaderSupport = false;
+    shaderCount                 = 0;
+    return true;
+#else
     videoSettings.shaderSupport = true;
     int32 maxShaders            = 0;
     shaderCount                 = 0;
@@ -914,6 +1003,7 @@ bool RenderDevice::InitShaders()
     SetLinear(shaderList[videoSettings.shaderID].linear || videoSettings.screenCount > 1);
 
     return true;
+#endif
 }
 
 void RenderDevice::LoadShader(const char *fileName, bool32 linear)
@@ -1024,6 +1114,11 @@ void RenderDevice::GetWindowSize(int32 *width, int32 *height)
         *width = 1920;
     if (height)
         *height = 1080;
+#elif RETRO_PLATFORM == RETRO_PS3
+    if (width)
+        *width = 1280;
+    if (height)
+        *height = 720;
 #endif
 }
 
