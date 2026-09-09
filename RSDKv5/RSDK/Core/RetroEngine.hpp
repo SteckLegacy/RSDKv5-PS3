@@ -8,6 +8,9 @@
 #include <string.h>
 #include <cmath>
 #include <ctime>
+#if RETRO_PLATFORM != RETRO_PS3
+#include <regex>
+#endif
 
 // ================
 // STANDARD TYPES
@@ -101,6 +104,11 @@ enum GameRegions {
 
 #define sprintf_s(x, _, ...) snprintf(x, _, __VA_ARGS__)
 
+#if defined(PS3) || defined(__PS3__) || defined(__CELLOS_LV2__)
+#include "ps3_compat.h"
+#define RETRO_PLATFORM   (RETRO_PS3)
+#define RETRO_DEVICETYPE (RETRO_STANDARD)
+#define FORCE_CASE_INSENSITIVE (1)
 #if defined _WIN32
 #undef sprintf_s
 
@@ -143,10 +151,6 @@ enum GameRegions {
 #elif defined __linux__
 #define RETRO_PLATFORM   (RETRO_LINUX)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
-#elif defined __CELLOS_LV2__
-#define RETRO_PLATFORM   (RETRO_PS3)
-#define RETRO_DEVICETYPE (RETRO_STANDARD)
-#else
 #define RETRO_PLATFORM   (RETRO_WIN)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
 #endif
@@ -160,6 +164,16 @@ enum GameRegions {
 #endif
 
 #define SCREEN_CENTERY (SCREEN_YSIZE / 2)
+
+#ifndef BASE_PATH
+#if defined(MANIA_BASE)
+#define BASE_PATH "/dev_hdd0/game/SMNP02026/USRDIR/"
+#elif defined(BLURAY)
+#define BASE_PATH "/dev_bdvd/PS3_GAME/USRDIR/"
+#else
+#define BASE_PATH "/dev_hdd0/game/RSDKV5PS3/USRDIR/"
+#endif
+#endif
 
 // ============================
 // RENDER DEVICE BACKENDS
@@ -507,9 +521,8 @@ enum GameRegions {
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #elif RETRO_RENDERDEVICE_EGL
-#include <glad/glad.h>
-#include <EGL/egl.h>    // EGL library
-#include <EGL/eglext.h> // EGL extensions
+#include <PSGL/psgl.h>
+#include <PSGL/psglu.h>
 
 #elif RETRO_RENDERDEVICE_VK
 #if RETRO_PLATFORM == RETRO_LINUX
