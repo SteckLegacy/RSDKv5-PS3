@@ -114,6 +114,4 @@ static inline int strncasecmp_ps3(const char *s1, const char *s2, size_t n) {
 #define M_PI 3.14159265358979323846
 #endif
 
-#endif // PS3
-
 #endif // PS3_COMPAT_H

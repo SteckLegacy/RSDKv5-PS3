@@ -258,7 +258,11 @@ enum GameRegions {
 
 // Enables the use of the mod loader
 #ifndef RETRO_USE_MOD_LOADER
+#if RETRO_PLATFORM == RETRO_PS3
+#define RETRO_USE_MOD_LOADER (0)
+#else
 #define RETRO_USE_MOD_LOADER (!RETRO_USE_ORIGINAL_CODE && 1)
+#endif
 #endif
 
 // Defines the version of the mod loader, this should be changed ONLY if the ModFunctionTable is updated in any way
@@ -429,11 +433,13 @@ enum GameRegions {
 #undef RETRO_RENDERDEVICE_EGL
 #define RETRO_RENDERDEVICE_EGL (1)
 #undef RETRO_INPUTDEVICE_PDBOAT
-#define RETRO_INPUTDEVICE_PDBOAT (1)
+#define RETRO_INPUTDEVICE_PDBOAT (0)
 #undef RETRO_INPUTDEVICE_KEYBOARD
 #define RETRO_INPUTDEVICE_KEYBOARD (1)
 #undef RETRO_AUDIODEVICE_MINI
 #define RETRO_AUDIODEVICE_MINI (1)
+#undef RETRO_USE_MOD_LOADER
+#define RETRO_USE_MOD_LOADER (0)
 
 #elif RETRO_PLATFORM == RETRO_OSX || RETRO_PLATFORM == RETRO_iOS
 
@@ -461,7 +467,7 @@ enum GameRegions {
 #elif RETRO_AUDIODEVICE_MINI
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
-#define MA_NO_RESOURCE_MANAGER 
+#define MA_NO_RESOURCE_MANAGER
 #define MA_NO_ENGINE
 #include <miniaudio/miniaudio.h>
 #endif
@@ -512,7 +518,7 @@ enum GameRegions {
 #elif RETRO_AUDIODEVICE_MINI
 #define MA_NO_DECODING
 #define MA_NO_ENCODING
-#define MA_NO_RESOURCE_MANAGER 
+#define MA_NO_RESOURCE_MANAGER
 #define MA_NO_ENGINE
 #include <miniaudio/miniaudio.h>
 #endif

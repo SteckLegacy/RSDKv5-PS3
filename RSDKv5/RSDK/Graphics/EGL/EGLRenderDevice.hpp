@@ -1,6 +1,24 @@
 #if RETRO_PLATFORM == RETRO_PS3
 #include <PSGL/psgl.h>
 #include <PSGL/psglu.h>
+
+#ifndef GL_ARGB_SCE
+#define GL_ARGB_SCE 0x8A52
+#endif
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
+#ifndef GL_UNSIGNED_INT_8_8_8_8_REV
+#define GL_UNSIGNED_INT_8_8_8_8_REV 0x8367
+#endif
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE 0x812F
+#endif
+
+typedef void *EGLDisplay;
+typedef void *EGLContext;
+typedef void *EGLSurface;
+typedef void *EGLConfig;
 #endif
 
 class RenderDevice : public RenderDeviceBase

@@ -41,7 +41,7 @@ static GameSpriteFrameType GameSpriteFrame;
 // otherwise you could just do animator->frames[x].hitboxes[y]
 // further proof of this is SVAR_SPRITEFRAME, to which the ONLY matching in the entire engine struct is "SpriteFrame" without the hitbox stuff.
 struct SpriteFrame : public GameSpriteFrameType {
-    typedef decltype(GameSpriteFrame) frame;
+    typedef GameSpriteFrameType frame;
 
     uint8 hitboxCount;
     Hitbox hitboxes[FRAMEHITBOX_COUNT];

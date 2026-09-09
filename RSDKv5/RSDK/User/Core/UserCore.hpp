@@ -59,7 +59,7 @@ extern UnknownInfo unknownInfo;
 // This is the base struct, it serves as the base for any API-specific stats
 // This struct should never be removed
 struct UserCore {
-    virtual ~UserCore() = default;
+    virtual ~UserCore() {}
 
     virtual void Shutdown() {}
     virtual bool32 CheckAPIInitialized() { return true; }

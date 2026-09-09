@@ -49,6 +49,7 @@ char _glFPrecision[30]; // len("precision mediump float;\n") -> 25
 #define _GLDEFINE "\n"
 #endif
 
+#if RETRO_PLATFORM != RETRO_PS3
 const GLchar *backupVertex = R"aa(
 in_V vec3 in_pos;
 in_V vec2 in_UV;
@@ -74,6 +75,7 @@ void main()
     gl_FragColor = texture2D(texDiffuse, ex_UV);
 }
 )aa";
+#endif
 
 EGLDisplay RenderDevice::display;
 EGLContext RenderDevice::context;
@@ -307,7 +309,7 @@ void RenderDevice::GetDisplays()
     displayCount = 1;
     GetWindowSize(&displayWidth[0], &displayHeight[0]);
     // reacting to me lying
-    displayInfo.displays                 = (decltype(displayInfo.displays))malloc(sizeof(displayInfo.displays->internal));
+    displayInfo.displays                 = (WindowInfo::BasicWindowInfo *)malloc(sizeof(displayInfo.displays->internal));
     displayInfo.displays[0].width        = displayWidth[0];
     displayInfo.displays[0].height       = displayHeight[0];
     displayInfo.displays[0].refresh_rate = videoSettings.refreshRate;
@@ -451,8 +453,12 @@ bool RenderDevice::InitGraphicsAPI()
     jni->env->CallVoidMethod(jni->thiz, setPixSize, (int)pixelSize.x, (int)pixelSize.y);
 #endif
 
-    Vector2 viewportPos{};
-    Vector2 viewportSize{ displayWidth[0], displayHeight[0] };
+    Vector2 viewportPos;
+    viewportPos.x = 0;
+    viewportPos.y = 0;
+    Vector2 viewportSize;
+    viewportSize.x = displayWidth[0];
+    viewportSize.y = displayHeight[0];
 
     if ((viewSize.x / viewSize.y) <= (pixAspect + 0.1)) {
         if ((pixAspect - 0.1) > (viewSize.x / viewSize.y)) {
@@ -498,6 +504,8 @@ bool RenderDevice::InitGraphicsAPI()
     glBindTexture(GL_TEXTURE_2D, imageTexture);
 #if RETRO_PLATFORM == RETRO_SWITCH
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+#elif RETRO_PLATFORM == RETRO_PS3
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_ARGB_SCE, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, 0, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 #else
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 #endif
@@ -767,6 +775,7 @@ void RenderDevice::FlipScreen()
     if (!isInitialized)
         return;
 
+#if RETRO_PLATFORM != RETRO_PS3
     if (lastShaderID != videoSettings.shaderID) {
         lastShaderID = videoSettings.shaderID;
 
@@ -775,6 +784,7 @@ void RenderDevice::FlipScreen()
         if (videoSettings.shaderSupport)
             glUseProgram(shaderList[videoSettings.shaderID].programID);
     }
+#endif
 
     if (windowRefreshDelay > 0) {
         windowRefreshDelay--;
@@ -785,12 +795,14 @@ void RenderDevice::FlipScreen()
 
     glClear(GL_COLOR_BUFFER_BIT);
 
+#if RETRO_PLATFORM != RETRO_PS3
     if (videoSettings.shaderSupport) {
         glUniform2fv(glGetUniformLocation(shaderList[videoSettings.shaderID].programID, "textureSize"), 1, &textureSize.x);
         glUniform2fv(glGetUniformLocation(shaderList[videoSettings.shaderID].programID, "pixelSize"), 1, &pixelSize.x);
         glUniform2fv(glGetUniformLocation(shaderList[videoSettings.shaderID].programID, "viewSize"), 1, &viewSize.x);
         glUniform1f(glGetUniformLocation(shaderList[videoSettings.shaderID].programID, "screenDim"), videoSettings.dimMax * videoSettings.dimPercent);
     }
+#endif
 
     int32 startVert = 0;
     switch (videoSettings.screenCount) {
@@ -874,6 +886,22 @@ void RenderDevice::FlipScreen()
 
 void RenderDevice::Release(bool32 isRefresh)
 {
+#if RETRO_PLATFORM == RETRO_PS3
+    if (isInitialized) {
+        glDeleteTextures(SCREEN_COUNT, screenTextures);
+        glDeleteTextures(1, &imageTexture);
+
+        if (videoBuffer)
+            delete[] videoBuffer;
+        videoBuffer = NULL;
+
+        psglDestroyContext(psglContext);
+        psglDestroyDevice(psglDevice);
+        psglExit();
+
+        isInitialized = false;
+    }
+#else
     if (display != EGL_NO_DISPLAY) {
         glDeleteTextures(SCREEN_COUNT, screenTextures);
         glDeleteTextures(1, &imageTexture);
@@ -902,6 +930,7 @@ void RenderDevice::Release(bool32 isRefresh)
 
         isInitialized = false;
     }
+#endif
 
     if (!isRefresh) {
         shaderCount = 0;
@@ -1126,7 +1155,11 @@ void RenderDevice::SetupImageTexture(int32 width, int32 height, uint8 *imagePixe
 {
     if (imagePixels && isInitialized) {
         glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_PS3
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8_REV, imagePixels);
+#else
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, imagePixels);
+#endif
     }
 }
 
@@ -1174,7 +1207,11 @@ void RenderDevice::SetupVideoTexture_YUV420(int32 width, int32 height, uint8 *yP
     }
 
     glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_PS3
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#else
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#endif
 }
 
 void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
@@ -1222,7 +1259,11 @@ void RenderDevice::SetupVideoTexture_YUV422(int32 width, int32 height, uint8 *yP
     }
 
     glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_PS3
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#else
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#endif
 }
 void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yPlane, uint8 *uPlane, uint8 *vPlane, int32 strideY, int32 strideU,
                                             int32 strideV)
@@ -1261,7 +1302,11 @@ void RenderDevice::SetupVideoTexture_YUV444(int32 width, int32 height, uint8 *yP
     }
 
     glBindTexture(GL_TEXTURE_2D, imageTexture);
+#if RETRO_PLATFORM == RETRO_PS3
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_ARGB_SCE, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#else
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, RETRO_VIDEO_TEXTURE_W, RETRO_VIDEO_TEXTURE_H, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, videoBuffer);
+#endif
 }
 
 void RenderDevice::SetLinear(bool32 linear)
