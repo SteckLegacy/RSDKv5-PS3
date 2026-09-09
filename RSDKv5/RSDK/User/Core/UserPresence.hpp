@@ -10,6 +10,7 @@ namespace SKU
 // This is the base struct, it serves as the base for any API-specific stats
 // This struct should never be removed
 struct UserRichPresence {
+    UserRichPresence() { curID = 0; }
     virtual ~UserRichPresence() {}
 
     virtual void StageLoad() {}
@@ -17,7 +18,7 @@ struct UserRichPresence {
     virtual void OnUnknownEvent() {}
     virtual void SetPresence(int32 id, String *message) {}
 
-    int32 curID = 0;
+    int32 curID;
 };
 
 extern UserRichPresence *richPresence;

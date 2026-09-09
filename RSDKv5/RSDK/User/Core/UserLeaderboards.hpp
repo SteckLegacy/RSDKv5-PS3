@@ -91,6 +91,9 @@ struct UserLeaderboards {
         loadList.parent    = this;
         entryInfo.loadList = &loadList;
         entryInfo.parent   = this;
+        status             = STATUS_NONE;
+        userRank           = 0;
+        isUser             = false;
     }
 
     virtual ~UserLeaderboards() {}
@@ -122,9 +125,9 @@ struct UserLeaderboards {
     LeaderboardID *currentLeaderboard;
     LeaderboardLoadList loadList;
     LeaderboardEntryInfo entryInfo;
-    int32 status   = STATUS_NONE;
-    int32 userRank = 0;
-    bool32 isUser  = false;
+    int32 status;
+    int32 userRank;
+    bool32 isUser;
 };
 #endif
 

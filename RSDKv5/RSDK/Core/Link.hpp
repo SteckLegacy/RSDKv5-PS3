@@ -397,7 +397,7 @@ void LinkGameLogic(EngineInfo info);
 // ORIGINAL CLASS
 
 // Windows.h already included by master header
-#if !(RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_SWITCH)
+#if !(RETRO_PLATFORM == RETRO_WIN || RETRO_PLATFORM == RETRO_SWITCH || RETRO_PLATFORM == RETRO_PS3)
 #include <dlfcn.h>
 #endif
 
@@ -431,6 +431,18 @@ private:
     static Result err;
 
 public:
+#elif RETRO_PLATFORM == RETRO_PS3
+    typedef void *Handle;
+    static const char *extention;
+    static const char *prefix;
+
+    static inline Handle dlopen(const char *, int) { return NULL; }
+    static inline void *dlsym(Handle, const char *) { return NULL; }
+    static inline int dlclose(Handle) { return 0; }
+    static inline char *dlerror() { return NULL; }
+
+    static const int RTLD_LOCAL = 0;
+    static const int RTLD_LAZY  = 0;
 #else
     typedef void *Handle;
     static const char *prefix;
@@ -442,6 +454,8 @@ public:
         Handle ret;
 #if RETRO_PLATFORM == RETRO_WIN
         ret = (Handle)LoadLibraryA(path.c_str());
+#elif RETRO_PLATFORM == RETRO_PS3
+        ret = NULL;
 #else
 #if RETRO_PLATFORM == RETRO_ANDROID
         // path should only load local libs
