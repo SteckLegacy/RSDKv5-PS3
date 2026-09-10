@@ -109,7 +109,7 @@ enum GameRegions {
 #define RETRO_PLATFORM   (RETRO_PS3)
 #define RETRO_DEVICETYPE (RETRO_STANDARD)
 #define FORCE_CASE_INSENSITIVE (1)
-#if defined _WIN32
+#elif defined _WIN32
 #undef sprintf_s
 
 #if defined WINAPI_FAMILY
@@ -624,61 +624,98 @@ namespace RSDK
 {
 
 struct RetroEngine {
-    RetroEngine() {}
-
+    RetroEngine()
+    {
 #if RETRO_STANDALONE
-    bool32 useExternalCode = true;
+        useExternalCode = true;
 #else
-    bool32 useExternalCode = false;
+        useExternalCode = false;
 #endif
+        devMenu            = false;
+        consoleEnabled     = false;
+        confirmFlip        = false;
+        XYFlip             = false;
+        focusState         = 0;
+        inFocus            = 0;
+        initialized        = false;
+        hardPause          = false;
+#if RETRO_REV0U
+        version            = 5;
+        gamePlatform       = NULL;
+        gameRenderType     = NULL;
+        gameHapticSetting  = NULL;
+#if !RETRO_USE_ORIGINAL_CODE
+        gameReleaseID      = 0;
+        releaseType        = "USE_STANDALONE";
+#endif
+#endif
+        storedShaderID     = SHADER_NONE;
+        storedState        = ENGINESTATE_LOAD;
+        gameSpeed          = 1;
+        fastForwardSpeed   = 8;
+        frameStep          = false;
+        showPaletteOverlay = false;
+        showUpdateRanges   = 0;
+        showEntityInfo     = 0;
+        memset(drawGroupVisible, 0, sizeof(drawGroupVisible));
+        displayTime        = 0.0;
+        videoStartDelay    = 0.0;
+        imageFadeSpeed     = 0.0;
+        skipCallback       = NULL;
+        streamsEnabled     = true;
+        streamVolume       = 1.0f;
+        soundFXVolume      = 1.0f;
+    }
 
-    bool32 devMenu        = false;
-    bool32 consoleEnabled = false;
+    bool32 useExternalCode;
 
-    bool32 confirmFlip = false; // swaps A/B, used for nintendo and etc controllers
-    bool32 XYFlip      = false; // swaps X/Y, used for nintendo and etc controllers
+    bool32 devMenu;
+    bool32 consoleEnabled;
 
-    uint8 focusState = 0;
-    uint8 inFocus    = 0;
+    bool32 confirmFlip; // swaps A/B, used for nintendo and etc controllers
+    bool32 XYFlip;      // swaps X/Y, used for nintendo and etc controllers
+
+    uint8 focusState;
+    uint8 inFocus;
 #if !RETRO_USE_ORIGINAL_CODE
     uint8 focusPausedChannel[CHANNEL_COUNT];
 #endif
 
-    bool32 initialized = false;
-    bool32 hardPause   = false;
+    bool32 initialized;
+    bool32 hardPause;
 
 #if RETRO_REV0U
-    uint8 version = 5; // determines what RSDK version to use, default to RSDKv5 since thats the "core" version
+    uint8 version; // determines what RSDK version to use, default to RSDKv5 since thats the "core" version
 
     const char *gamePlatform;
     const char *gameRenderType;
     const char *gameHapticSetting;
 
 #if !RETRO_USE_ORIGINAL_CODE
-    int32 gameReleaseID     = 0;
-    const char *releaseType = "USE_STANDALONE";
+    int32 gameReleaseID;
+    const char *releaseType;
 #endif
 #endif
 
-    int32 storedShaderID      = SHADER_NONE;
-    int32 storedState         = ENGINESTATE_LOAD;
-    int32 gameSpeed           = 1;
-    int32 fastForwardSpeed    = 8;
-    bool32 frameStep          = false;
-    bool32 showPaletteOverlay = false;
-    uint8 showUpdateRanges    = 0;
-    uint8 showEntityInfo      = 0;
+    int32 storedShaderID;
+    int32 storedState;
+    int32 gameSpeed;
+    int32 fastForwardSpeed;
+    bool32 frameStep;
+    bool32 showPaletteOverlay;
+    uint8 showUpdateRanges;
+    uint8 showEntityInfo;
     bool32 drawGroupVisible[DRAWGROUP_COUNT];
 
     // Image/Video support
-    double displayTime       = 0.0;
-    double videoStartDelay   = 0.0;
-    double imageFadeSpeed    = 0.0;
-    bool32 (*skipCallback)() = NULL;
+    double displayTime;
+    double videoStartDelay;
+    double imageFadeSpeed;
+    bool32 (*skipCallback)();
 
-    bool32 streamsEnabled = true;
-    float streamVolume    = 1.0f;
-    float soundFXVolume   = 1.0f;
+    bool32 streamsEnabled;
+    float streamVolume;
+    float soundFXVolume;
 };
 
 extern RetroEngine engine;
