@@ -11439,9 +11439,12 @@ IMPLEMENTATION
 
 #include <stdarg.h>
 #include <stdio.h>
-#if !defined(_MSC_VER) && !defined(__DMC__)
+#if !defined(_MSC_VER) && !defined(__DMC__) && !defined(PS3) && !defined(__PS3__) && !defined(__CELLOS_LV2__)
     #include <strings.h>    /* For strcasecmp(). */
     #include <wchar.h>      /* For wcslen(), wcsrtombs() */
+#endif
+#if defined(PS3) || defined(__PS3__) || defined(__CELLOS_LV2__)
+    #include "ps3_compat.h"
 #endif
 #ifdef _MSC_VER
     #include <float.h>      /* For _controlfp_s constants */
