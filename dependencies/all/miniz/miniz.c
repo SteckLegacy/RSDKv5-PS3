@@ -3086,12 +3086,16 @@ static FILE *mz_freopen(const char *pPath, const char *pMode, FILE *pStream)
 #define MZ_DELETE_FILE remove
 
 #elif defined(PS3) || defined(__PS3__) || defined(__CELLOS_LV2__)
+#include <sys/stat.h>
+#ifndef MINIZ_NO_TIME
+#define MINIZ_NO_TIME
+#endif
 #define MZ_FOPEN(f, m) fopen(f, m)
 #define MZ_FCLOSE fclose
 #define MZ_FREAD fread
 #define MZ_FWRITE fwrite
 #define MZ_FTELL64 ftell
-#define MZ_FSEEK64 fseek
+#define MZ_FSEEK64(f, o, s) fseek(f, (long)(o), s)
 #define MZ_FILE_STAT_STRUCT stat
 #define MZ_FILE_STAT stat
 #define MZ_FFLUSH fflush
