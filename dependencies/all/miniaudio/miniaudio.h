@@ -11881,7 +11881,9 @@ static void ma_sleep__posix(ma_uint32 milliseconds)
     (void)milliseconds;
     MA_ASSERT(MA_FALSE);  /* The Emscripten build should never sleep. */
 #else
-    #if (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 199309L) || defined(MA_NX)
+    #if defined(PS3) || defined(__PS3__) || defined(__CELLOS_LV2__)
+        sys_timer_usleep(milliseconds * 1000);
+    #elif (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 199309L) || defined(MA_NX)
         struct timespec ts;
         ts.tv_sec  = milliseconds / 1000;
         ts.tv_nsec = milliseconds % 1000 * 1000000;
@@ -14854,10 +14856,12 @@ typedef int ma_atomic_memory_order;
         #define ma_atomic_thread_fence(order) __sync_synchronize(), (void)order
         static MA_INLINE ma_uint8 ma_atomic_exchange_explicit_8(volatile ma_uint8* dst, ma_uint8 src, ma_atomic_memory_order order)
         {
-            if (order > ma_atomic_memory_order_acquire) {
-                __sync_synchronize();
-            }
-            return __sync_lock_test_and_set(dst, src);
+            ma_uint8 oldValue;
+            do {
+                oldValue = *dst;
+            } while (__sync_val_compare_and_swap(dst, oldValue, src) != oldValue);
+            (void)order;
+            return oldValue;
         }
         static MA_INLINE ma_uint16 ma_atomic_exchange_explicit_16(volatile ma_uint16* dst, ma_uint16 src, ma_atomic_memory_order order)
         {
